@@ -1,0 +1,114 @@
+@Machine Learning
+---Programming Computers to optimize performance using Example Data or past Experience
+---Field of Study that gives computers ability to learn without being explicitly programmed
+###It is a branch of artificial intelligence,used for design and development of algorithms,so that computers can evolve behaviour based on emperical data
+Given a corpus of text identifying the key topics is a very important and difficult task. Such task can be accomplished to a good extent using machine learning.
+
+Given an image identifying various objects in using is called Computer Vision. Machine learning is being used to a very large extent in computer vision in order to identify objects in it.
+Natural language processing (NLP) is a field of computer science concerned with the interactions between computers and human (natural) languages, and, in particular, concerned with programming computers to fruitfully process natural language such as English. Lately, there has been a huge progress in NLP using machine learning.
+The other examples are:
+Find Similar content based on Object Properties
+Detect Anomalies within given data
+Ranking Search Results with User Feedback Learning
+Classifying DNA sequences
+Sentiment Analysis/ Opinion Mining
+BioInformatics
+Speech and Handwriting Recognition
+
+#Types of Machine Learning
+1)Supervised Learning - Given Example inputs and outputs.Learn to map inputs to outputs.The supervised learning is further categorized as classification and regression. And the example of unsupervised learnings is clustering.
+2)Unsupervised Learning - When we don't have a mapping of input to expected output, we call it unsupervised machine learning. In unsupervised machine learning we are not provided with the labels of data, instead, we are supposed to find the structure in the data.
+3)Reinforcement learning -  is an area of machine learning concerned with how software agents ought to take actions in an environment so as to maximize the reward. In reinforcement learning, the program is provided with a dynamic environment and it should achieve a certain goal by interacting with the environment.
+
+##Why there is no visualization tool in bigdata?
+1)The visualization of such bigdata is difficult and it does not make sense to the human eye.Instead first summary is calculated and then plotted
+This library has all common machine learning algorithms and utilities, including:
+Classification
+Regression
+Clustering
+Collaborative filtering
+Dimensionality reduction
+
+The functionality of MLLib is roughly classified into five packages.
+1)The first one is ML Algorithms which has common machine learning algorithms such as classification, regression, clustering, and collaborative filtering
+2)Featurization tools contain the functions to help in feature extraction, transformation, dimensionality reduction, and selection.
+3)The third is the Pipelines. In pipelines, it has tools for constructing, evaluating, and tuning Machine learning Pipelines
+4)As part of the persistence, it provides the ability to save and load algorithms, models, and Pipelines. The saved models and pipelines can be transmitted over the wire for running in production.
+5)The rest of utilities that it provides are related linear algebra, statistics, data handling, etc.
+
+
+####Imp Machine Learning Use Case of BIGDATA- Collaborative Filtering
+###MovieLens Recommendation Project
+
+//Note: it works only in spark2
+//To launch it on local mode, run the following command on cloudxlab console: spark-shell
+//To launch it in yarn mode, run the following command on cloudxlab console: spark-shell --master yarn
+
+import org.apache.spark.ml.recommendation.ALS
+ 
+case class Rating(userId: Int, movieId: Int, rating: Float, timestamp: Long)
+###Convert each line of text into object of rating class
+def parseRating(str: String): Rating = {
+  val fields = str.split("::")
+  assert(fields.size == 4)
+  Rating(fields(0).toInt, fields(1).toInt, fields(2).toFloat, fields(3).toLong)
+}
+
+//Test it
+parseRating("1::1193::5::978300760")
+
+var raw = sc.textFile("/data/ml-1m/ratings.dat")
+//check one record. it should be res4: Array[String] = Array(1::1193::5::978300760)
+//If this fails the location of file is wrong.
+raw.take(1)
+
+val ratings = raw.map(parseRating).toDF()
+//check if everything is ok
+ratings.show(5)
+
+val Array(training, test) = ratings.randomSplit(Array(0.8, 0.2))
+
+// Build the recommendation model using ALS on the training data
+//Alternating Least Squares (ALS) matrix factorization.
+val als = new ALS().setMaxIter(5).setRegParam(0.01).setUserCol("userId").setItemCol("movieId").setRatingCol("rating")
+
+val model = als.fit(training)
+model.save("mymodel")
+
+//Prepare the recommendations
+val predictions = model.transform(test)
+predictions.map(r => r(2).asInstanceOf[Float] - r(4).asInstanceOf[Float])
+.map(x => x*x)
+.filter(!_.isNaN)
+.reduce(_ + _)
+
+predictions.take(10)
+
+predictions.write.format("com.databricks.spark.csv").save("ml-predictions.csv")
+
+
+##MLlib Data Types And Libraries
+
+Spark MLlib is not only a library of algorithms, it also provides various useful data types such as
+Local vector - Local vector is an integer-typed and 0-based indices and double-typed values. For example dv2 = [1.0, 0.0, 3.0]
+Labeled Point - Labeled point is a local vector, either dense or sparse, associated with a label/response. Example: pos = LabeledPoint(1.0, [1.0, 0.0, 3.0])
+matrices - 
+
+##Spark provides a robust pipeline system to make the life of data scientist easier. It is partially inspired by sci-kit learn.
+1)DataFrame: This ML API uses DataFrame from Spark SQL as an ML dataset, which can hold a variety of data types. E.g., a DataFrame could have different columns storing text, feature vectors, true labels, and predictions.
+2)Transformer: A Transformer is an algorithm which can transform one DataFrame into another DataFrame. E.g., an ML model is a Transformer which transforms a DataFrame with features into a DataFrame with predictions.
+3)Estimator: An Estimator is an algorithm which can be fit on a DataFrame to produce a Transformer. E.g., a learning algorithm is an Estimator which trains on a DataFrame and produces a model.
+4)Pipeline: A Pipeline chains multiple Transformers and Estimators together to specify an ML workflow.
+5)Parameter: All Transformers and Estimators now share a common API for specifying parameters.
+
+A Pipeline is an Estimator. Thus, after a Pipeline’s fit() method runs, it produces a PipelineModel, which is aTransformer. This PipelineModel is used at test time; the figure below illustrates this usage.
+
+Spark Mllib also provides various basic statistics functions such as: Correlations, Stratified sampling, Hypothesis testing, Random data generation, Kernel density estimation
+
+MLlib supports various methods:
+Binary Classification
+linear SVMs, logistic regression, decision trees, random forests, gradient-boosted trees, naive Bayes
+Multiclass Classification
+logistic regression, decision trees, random forests, naive Bayes
+Regression
+linear least squares, Lasso, ridge regression, decision trees, random forests, gradient-boosted trees, isotonic regression
